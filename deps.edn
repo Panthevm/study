@@ -1,0 +1,10 @@
+
+{:paths ["src"]
+ :deps  {org.clojure/clojure    {:mvn/version "LATEST"}
+         net.mikera/core.matrix {:mvn/version "LATEST"}
+         clatrix                {:mvn/version "LATEST"}}
+ :aliases
+ {:nrepl {:extra-deps {cider/cider-nrepl {:mvn/version "RELEASE"}}
+          :main-opts  ["-m" "nrepl.cmdline"
+                       "--middleware" "[cider.nrepl/cider-middleware]"
+                       "--port"       "5555"]}}}
