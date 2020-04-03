@@ -1,57 +1,37 @@
 (ns core
-  (:require [clojure.core.matrix :as m]
-            [clojure.core.matrix.operators :as o]))
+  (:use clojure.core.matrix)
+  (:require [incanter.charts :refer [xy-plot add-points]]
+            [incanter.core :refer [view]]))
 
-                                        ;Chapter 1
-(defn square-mat
-  "Creates a square matrix of size n x n
-  whose elements are all e"
-  [n e]
-  (let [repeater (partial repeat n)]
-    (m/matrix (-> e repeater repeater))))
-
-(defn id-computed-mat
-  "Creates an identity matrix of size n x n
-  using compute-matrix"
+(defn lmatrix
   [n]
-  (m/compute-matrix [n n] #(if (= %1 %2) 1 0)))
+  (compute-matrix [n (+ n 2)]
+                  (fn [i j] ({0 -1, 1 2, 2 -1} (- j i) 0))))
 
-(defn rand-computed-mat
-  "Creates an n x m matrix of random elements   using compute-matrix"
-  [n m]
-  (m/compute-matrix [n m] (fn [i j] (rand-int 100))))
+(defn problem
+  [n n-observed lambda]
+  (let [i (shuffle (range n))]
+    {:l               (mmul (lmatrix n) lambda)
+     :observed        (take n-observed i)
+     :hidden          (drop n-observed i)
+     :observed-values (matrix (repeatedly n-observed rand))}))
 
-(defn mat-eq
-  "Checks if two matrices are equal"
-  [a b]
-  (and (= (count a) (count b))
-       (reduce #(and %1 %2) (map = a b))))
+(defn solve
+  [{:keys [m observed hidden observed-values] :as problem}]
+  (let [m1  (select m :all hidden)
+        m2  (select m :all observed)
+        m11 (mmul (transpose m1) m1)
+        m12 (mmul (transpose m1) m2)]
+    (assoc problem :hidden-values
+           (mmul -1 (inverse m11) m12 observed-values))))
 
-(defn mat-add
-  "Add two or more matrices"
-  ([a b]
-   (mapv #(mapv + %1 %2) a b))
-  ([a b & more]
-   (let [m (concat [a b] more)]
-     (reduce mat-add m))))
+(defn plot-points
+  [s]
+  (let [x (concat (:hidden s) (:observed s))
+        y (concat (:hidden-values s) (:observed-values s))]
+    (view
+      (add-points
+        (xy-plot x y) (:observed s) (:observed-values s)))))
 
-(defn trace-mat [a]
-  (reduce
-   (fn [acc col]
-     (+ acc (apply + col)))
-   0
-   a))
-
-(trace-mat (square-mat 2 2))
-
-(comment
-  (square-mat 2 2)
-  (id-computed-mat 2)
-  (rand-computed-mat 2 2)
-  (= (o/+ (square-mat 2 2)
-          (square-mat 2 2))
-     (mat-add (square-mat 2 2)
-              (square-mat 2 2)))
-  (mat-eq (square-mat 2 2) (square-mat 2 2))
-
-  )
+(defn plot-rand-sample []
+  (plot-points (solve (problem 300 20 30))))
