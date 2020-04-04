@@ -1,4 +1,3 @@
-
 {:paths ["src"]
  :deps  {org.clojure/clojure      {:mvn/version "RELEASE"}
          net.mikera/core.matrix   {:mvn/version "RELEASE"}

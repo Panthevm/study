@@ -1,4 +1,4 @@
-(ns core
+(ns interpolating.core
   (:use clojure.core.matrix)
   (:require [incanter.charts :refer [xy-plot add-points]]
             [incanter.core :refer [view]]))
@@ -10,34 +10,28 @@
 
 (defn problem
   [n n-observed lambda]
-  (let [i (shuffle (range n))]
+  (let [m (shuffle (range n))]
     {:m               (mmul (lmatrix n) lambda)
-     :observed        (take n-observed i)
-     :hidden          (drop n-observed i)
+     :observed        (take n-observed m)
+     :hidden          (drop n-observed m)
      :observed-values (matrix (repeatedly n-observed rand))}))
 
 (defn solve
   [{:keys [m observed hidden observed-values] :as problem}]
   (let [m1  (select m :all hidden)
         m2  (select m :all observed)
-          m11 (mmul (transpose m1) m1)
+        m11 (mmul (transpose m1) m1)
         m12 (mmul (transpose m1) m2)]
     (assoc problem :hidden-values
            (mmul -1 (inverse m11) m12 observed-values))))
 
-
 (defn plot-points
-  [s]
-  (let [x (concat (:hidden s) (:observed s))
-        y (concat (:hidden-values s) (:observed-values s))]
+  [{:keys [hidden observed hidden-values observed-values]}]
+  (let [x (concat hidden observed)
+        y (concat hidden-values observed-values)]
     (view
       (add-points
-        (xy-plot x y) (:observed s) (:observed-values s)))))
+       (xy-plot x y) observed observed-values))))
 
 (defn plot-rand-sample []
   (plot-points (solve (problem 300 20 30))))
-
-#_(- (* (+ 3 1)
-      (Math/sin 30))
-   (* 4 (Math/sin (* 30 (/ (+ 3 1)
-                           1)))))
