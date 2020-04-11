@@ -9,9 +9,11 @@
 (def ^:const x-data [0.2 0.4 0.6 0.8 1.1 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.2 3.3 3.6 3.8 4.0])
 (def ^:const y-data [2.3 0.6 2.5 1.5 1.8 1.0 2.6 0.4 1.4 2.8 3.5 3.2 5.5 6.6 5.2 7.0 5.5 8.0 7.4 11.4])
 (def ^:const *count (count x-data))
+(def ^:const degree 3)
 
-(def x (n/dge *count 2 (concat (take *count (repeat 1)) x-data)))
-(def y (n/dge *count 1 y-data))
+(def *x  (u/ones 2 x-data))
+(def *y  (n/dge *count 1 y-data))
+(def *xd (u/ones degree x-data))
 
 (defn linear [x y]
   (let [xt  (c/trans x)
@@ -37,6 +39,10 @@
     (let [[[a b]] (seq (linear x (u/log y 0)))]
       (map (partial formula a b) x-data))))
 
+(defn result-pol [x y]
+  (let [xv (u/vandermonde x)]
+    (first (seq (c/mm xv (linear xv *y))))))
+
 (defn chart [x y & [results]]
   (chart/view
    (chart/xy-chart (reduce
@@ -50,10 +56,9 @@
                     :y-axis       {:title "Y"}
                     :render-style :scatter
                     :theme        :matlab})))
-                                        ;exp
-                                        ;polinom
 
-(time (->> [{:label "Linear regression"      :y (result-linear x y)}
-            {:label "Power regression"       :y (result-pow x y)}
-            {:label "Exponential regression" :y (result-exp x y)}]
+(time (->> [{:label "Linear      regression" :y (result-linear *x  *y)}
+            {:label "Power       regression" :y (result-pow    *x  *y)}
+            {:label "Exponential regression" :y (result-exp    *x  *y)}
+            {:label "Polynomial  regression" :y (result-pol    *xd *y)}]
            (chart x y)))
