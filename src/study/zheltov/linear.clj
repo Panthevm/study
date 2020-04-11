@@ -1,8 +1,9 @@
 (ns app.linear
   (:require [uncomplicate.neanderthal.core   :as c]
             [uncomplicate.neanderthal.native :as n]
-            [uncomplicate.neanderthal.linalg :as l]
             [uncomplicate.neanderthal.math   :as m]
+            [uncomplicate.neanderthal.linalg :as l]
+            [app.utils                       :as u]
             [com.hypirion.clj-xchart         :as chart]))
 
 (def ^:const x-data [0.2 0.4 0.6 0.8 1.1 1.2 1.4 1.6 1.8 2.0 2.2 2.4 2.6 2.8 3.0 3.2 3.3 3.6 3.8 4.0])
@@ -26,17 +27,17 @@
 
 (defn result-pow [x y]
   (letfn [(formula [a b x]
-            (* (m/exp a) (m/pow x b)))
-          (matrix-log [m tcol]
-            (c/alter! (c/copy m)
-                      (fn ^double [^long _ ^long col ^double x]
-                        (cond-> x (= tcol col) m/log))))]
-    (let [X (matrix-log x 1)
-          Y (matrix-log y 0)
-          [[a b]] (seq (linear X Y))]
+            (* (m/exp a) (m/pow x b)))]
+    (let [[[a b]] (seq (linear (u/log x 1) (u/log y 0)))]
       (map (partial formula a b) x-data))))
 
-(defn chart [x y & results]
+(defn result-exp [x y]
+  (letfn [(formula [a b x]
+            (m/exp (+ a (* b x))))]
+    (let [[[a b]] (seq (linear x (u/log y 0)))]
+      (map (partial formula a b) x-data))))
+
+(defn chart [x y & [results]]
   (chart/view
    (chart/xy-chart (reduce
                     (fn [acc {:keys [y label]}]
@@ -44,15 +45,15 @@
                                         :y     y
                                         :style {:render-style :line
                                                 :marker-type  :none}}))
-                    {"Данные" [x-data y-data]} results)
-                   {:title        "Линейная аппроксимация"
-                    :x-axis       {:title "X"}
+                    {"Data" [x-data y-data]} results)
+                   {:x-axis       {:title "X"}
                     :y-axis       {:title "Y"}
                     :render-style :scatter
                     :theme        :matlab})))
+                                        ;exp
+                                        ;polinom
 
-(time (chart x y
-             {:label "label"
-              :y (result-linear x y)}
-             {:label "s"
-              :y (result-pow x y)}))
+(time (->> [{:label "Linear regression"      :y (result-linear x y)}
+            {:label "Power regression"       :y (result-pow x y)}
+            {:label "Exponential regression" :y (result-exp x y)}]
+           (chart x y)))

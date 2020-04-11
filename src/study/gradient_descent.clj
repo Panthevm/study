@@ -23,7 +23,7 @@
   [X y theta]
   (let [predicted (hypothesis theta X)]
     (/ (mean-square-error predicted y)
-       (* 2 number-of-examples))))
+       (* 2 (count x)))))
 
 (defn cost-derivative
   [X y theta]
