@@ -25,30 +25,36 @@
   (letfn [(formula [a b x]
             (+ a (* b x)))]
     (let [[[a b]] (seq (linear x y))]
-      (map (partial formula a b) x-data))))
+      {:result (map (partial formula a b) x-data)
+       :coeff  [a b]})))
 
 (defn result-pow [x y]
   (letfn [(formula [a b x]
             (* (m/exp a) (m/pow x b)))]
     (let [[[a b]] (seq (linear (u/log x 1) (u/log y 0)))]
-      (map (partial formula a b) x-data))))
+      {:result (map (partial formula a b) x-data)
+       :coeff  [(m/exp a) b]})))
 
 (defn result-exp [x y]
   (letfn [(formula [a b x]
             (m/exp (+ a (* b x))))]
     (let [[[a b]] (seq (linear x (u/log y 0)))]
-      (map (partial formula a b) x-data))))
+      {:result (map (partial formula a b) x-data)
+       :coeff [a b]})))
+
 
 (defn result-pol [x y]
-  (let [xv (u/vandermonde x)]
-    (first (seq (c/mm xv (linear xv *y))))))
+  (let [xv    (u/vandermonde x)
+        coeff (linear xv y)]
+    {:result (first (seq (c/mm xv coeff)))
+     :coeff  (vec (first (seq coeff)))}))
 
 (defn chart [x y & [results]]
   (chart/view
    (chart/xy-chart (reduce
-                    (fn [acc {:keys [y label]}]
+                    (fn [acc {:keys [solve label]}]
                       (assoc acc label {:x     x-data
-                                        :y     y
+                                        :y     (:result solve)
                                         :style {:render-style :line
                                                 :marker-type  :none}}))
                     {"Data" [x-data y-data]} results)
@@ -57,8 +63,9 @@
                     :render-style :scatter
                     :theme        :matlab})))
 
-(time (->> [{:label "Linear      regression" :y (result-linear *x  *y)}
-            {:label "Power       regression" :y (result-pow    *x  *y)}
-            {:label "Exponential regression" :y (result-exp    *x  *y)}
-            {:label "Polynomial  regression" :y (result-pol    *xd *y)}]
+(time (->> [{:label "Linear      regression" :solve (result-linear *x  *y)}
+            {:label "Power       regression" :solve (result-pow    *x  *y)}
+            {:label "Exponential regression" :solve (result-exp    *x  *y)}
+            {:label "Polynomial  regression" :solve (result-pol    *xd *y)}]
+           (u/table-print x-data y-data)
            (chart x y)))
