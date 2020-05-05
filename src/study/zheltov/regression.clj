@@ -10,8 +10,15 @@
 
 (defstruct answer :new-y :coeff)
 
-(defn calc [[x y]]
-  (let [x   (m/matrix (map (partial conj [1])  x))
+(defn vendermonde [value pow]
+  (m/transpose
+   (map-indexed
+    (fn [idx v]
+      (map #(m/pow % idx) v))
+    (take (or pow 2) (repeat value)))))
+
+(defn calc [[x y] & [pow]]
+  (let [x   (vendermonde x pow)
         xt  (m/transpose x)
         xtx (m/mmul xt x)]
     (vec (m/mmul (m/inverse xtx) xt (m/matrix y)))))
@@ -34,35 +41,32 @@
     (letfn [(formula [x] (m/exp (+ a (* b x))))]
       (struct answer (map formula x) coeff))))
 
-(defmethod result :pol ;TODO
-  [{[x y :as data] :data}]
-  (letfn [(vandermonde [row]
-            (vec (map-indexed
-                  (fn [idx v] (m/pow v idx)) row)))]
-    (let [*x    (vandermonde x)
-          coeff (calc (assoc data 0 *x))]
-      (prn *x "@" coeff)
-      (struct answer (m/mmul *x coeff) coeff))))
+(defmethod result :pol
+  [{[x y :as data] :data pow :pow}]
+  (let [coeff (calc data pow)]
+    (struct answer (m/mmul (vendermonde x pow) coeff) coeff)))
 
 (defn chart [data results]
+  (prn results)
   (let [[x y] data]
     (c/view
-     (c/xy-chart (reduce
-                  (fn [acc {:keys [solve label]}]
-                    (assoc acc label {:x     x
-                                      :y     (:new-y solve)
-                                      :style {:render-style :line
-                                              :marker-type  :none}}))
-                  {"Data" data} results)
-                 {:x-axis       {:title "X"}
-                  :y-axis       {:title "Y"}
-                  :render-style :scatter
-                  :theme        :matlab}))))
+     (c/xy-chart
+      (reduce
+       (fn [acc {:keys [solve label]}]
+         (assoc acc label {:x     x
+                           :y     (:new-y solve)
+                           :style {:render-style :line
+                                   :marker-type  :none}}))
+       {"Data" data} results)
+      {:x-axis       {:title "X"}
+       :y-axis       {:title "Y"}
+       :render-style :scatter
+       :theme        :matlab}))))
 
 (time (->> [{:label "Linear regression"      :solve (result {:type :linear :data data})}
             {:label "Power  regression"      :solve (result {:type :pow    :data data})}
             {:label "Exponential regression" :solve (result {:type :exp    :data data})}
-            #_{:label "Polynomial  regression" :solve (result {:type :pol    :data data})}]
+            {:label "Polynomial  regression" :solve (result {:type :pol    :data data :pow 3})}]
            (chart data)))
 
 
