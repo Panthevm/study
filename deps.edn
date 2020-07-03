@@ -1,11 +1,9 @@
 {:paths ["src"]
  :deps  {org.clojure/clojure      {:mvn/version "RELEASE"}
-         net.mikera/core.matrix   {:mvn/version "RELEASE"}
-         incanter/incanter-core   {:mvn/version "RELEASE"}
-         incanter/incanter-charts {:mvn/version "RELEASE"}
 
-         uncomplicate/neanderthal {:mvn/version "RELEASE"}
+         net.mikera/core.matrix   {:mvn/version "RELEASE"}
          com.hypirion/clj-xchart  {:mvn/version "RELEASE"}}
+
  :aliases
  {:nrepl {:extra-deps {cider/cider-nrepl {:mvn/version "RELEASE"}}
           :main-opts  ["-m" "nrepl.cmdline"

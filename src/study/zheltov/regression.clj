@@ -47,7 +47,6 @@
     (struct answer (m/mmul (vendermonde x pow) coeff) coeff)))
 
 (defn chart [data results]
-  (prn results)
   (let [[x y] data]
     (c/view
      (c/xy-chart
@@ -63,10 +62,31 @@
        :render-style :scatter
        :theme        :matlab}))))
 
+(defn table-print [[x-data y-data] results]
+  (clojure.pprint/print-table
+   (vector (reduce
+            (fn [acc {:keys [label solve]}]
+              (assoc acc (keyword label) (:coeff solve)))
+            {}
+            results)))
+  (clojure.pprint/print-table
+   [:x :y :Linear :Power :Exponential :Polynomial]
+   (map
+    (fn [idx a b]
+      (letfn [(get-result [i]
+                (nth (get-in (nth results i) [:solve :new-y]) idx))]
+        (hash-map :x a :y b :Linear (get-result 0) :Power (get-result 1) :Exponential (get-result 2) :Polynomial (get-result 3))))
+    (iterate inc 0)
+    x-data
+    y-data))
+  results)
+
 (time (->> [{:label "Linear regression"      :solve (result {:type :linear :data data})}
             {:label "Power  regression"      :solve (result {:type :pow    :data data})}
             {:label "Exponential regression" :solve (result {:type :exp    :data data})}
             {:label "Polynomial  regression" :solve (result {:type :pol    :data data :pow 3})}]
+           (table-print data)
            (chart data)))
+
 
 
